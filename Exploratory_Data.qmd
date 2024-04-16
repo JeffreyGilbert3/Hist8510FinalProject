@@ -1,0 +1,223 @@
+---
+title: "Exploratory_Data"
+format: html
+author: "Jeffrey Gilbert"
+editor: visual
+---
+> In this section I am getting all the data loaded in and workable.
+
+```{r}
+library(tidytext)
+library(tidyverse)
+library(readtext)
+library(tm)
+library(topicmodels)
+library(widyr)
+library(SnowballC)
+library(DigitalMethodsData)
+```
+
+```{r}
+stop_words_custom <- stop_words %>% 
+  add_row(word="foreign", lexicon="NA")%>%
+  add_row(word="policy", lexicon="NA")%>%
+  add_row(word="international", lexicon="NA")%>%
+  add_row(word="york", lexicon="NA")%>%
+  add_row(word="act", lexicon="NA")%>%
+  add_row(word="bulletin", lexicon="NA")%>%
+  add_row(word="3", lexicon="NA")%>%
+  add_row(word="association", lexicon="NA")%>%
+  add_row(word="class", lexicon="NA")%>%
+  add_row(word="published", lexicon="NA")%>%
+  add_row(word="2", lexicon="NA")%>%
+  add_row(word="december", lexicon="NA")%>%
+  add_row(word="march", lexicon="NA")%>%
+  add_row(word="post", lexicon="NA")%>%
+  add_row(word="vol", lexicon="NA")%>%
+  add_row(word="membership", lexicon="NA")%>%
+  add_row(word="incorporated", lexicon="NA")%>%
+  add_row(word="weekly", lexicon="NA")%>%
+  add_row(word="5", lexicon="NA")%>%
+  add_row(word="1", lexicon="NA")%>%
+  add_row(word="4", lexicon="NA")%>%
+  add_row(word="22", lexicon="NA")%>%
+  add_row(word="8", lexicon="NA")%>%
+  add_row(word="6", lexicon="NA")%>%
+  add_row(word="7", lexicon="NA")%>%
+  add_row(word="ing", lexicon="NA")%>%
+  add_row(word="de", lexicon="NA")%>%
+  add_row(word="tion", lexicon="NA")%>%
+  add_row(word="vera", lexicon="NA")%>%
+  add_row(word="vou", lexicon="NA")%>%
+  add_row(word="editor", lexicon="NA")%>%
+  add_row(word="subscription", lexicon="NA")%>%
+  add_row(word="page", lexicon="NA")%>%
+  add_row(word="printed", lexicon="NA")%>%
+  add_row(word="ment", lexicon="NA")%>%
+  add_row(word="matter", lexicon="NA")%>%
+  add_row(word="publications", lexicon="NA")%>%
+  add_row(word="con", lexicon="NA")%>%
+  add_row(word="street", lexicon="NA")
+```
+
+```{r}
+metadata <- read.csv("https://raw.githubusercontent.com/regan008/ForeignPolicyBulletinData/main/metadata.csv")
+
+fp.metadata <- separate(metadata,
+         col = date,
+         into = c("year", "month", "day"),
+          remove = FALSE)
+
+fpmeta <- as.data.frame(fp.metadata)
+file_paths <- system.file("ForeignPolicyBulletinData/fptxt/")
+fp_texts <- readtext(paste("ForeignPolicyBulletinData/fptxt/", "*.txt", sep=""))
+fp_whole <- full_join(fpmeta, fp_texts, by = c("id" = "doc_id")) %>% as_tibble() 
+
+tidy_fp <- fp_whole %>%
+  unnest_tokens(word, text) %>% 
+  filter(str_detect(word, "[a-z']$")) %>% 
+  anti_join(stop_words_custom)
+```
+
+```{r}
+tidy_fp <- tidy_fp %>% filter(!grepl('[0-9]', word))
+```
+
+> In this section I am exploring the FP dataset with text analysis. 
+
+```{r}
+tidy_fp %>%
+  count(word, sort = TRUE)
+```
+> World War II and the nations assoicated with it are clearly dominant topics in this dataset. 
+
+```{r}
+fp.tf.idf <- tidy_fp %>%
+  count(id, word, sort = TRUE)  %>%  
+  bind_tf_idf(word, id, n) 
+  
+  fp.tf.idf %>% arrange(desc(tf_idf))
+```
+
+```{r}
+fp_word_pairs <- fp_whole %>% 
+  mutate(speech_end = word(text, -5000, end = -1)) %>% 
+  unnest_tokens(word, speech_end) %>%  
+  anti_join(stop_words_custom)%>%
+  pairwise_count(word, id, sort = TRUE, upper = FALSE)
+
+fp_word_pairs
+```
+> Need to figure out why 1921 and 1879 is being mentioned so much in this datset.
+
+```{r}
+library(igraph)
+library(ggraph)
+
+fp_word_pairs %>% 
+  filter(n >= 450) %>%  
+  graph_from_data_frame() %>% 
+  ggraph(layout = "fr") + 
+  geom_edge_link(aes(edge_alpha = n, edge_width = n), edge_colour = "purple") +
+  geom_node_point(size = 5) +
+  geom_node_text(aes(label = name), repel = TRUE, 
+                 point.padding = unit(0.2, "lines")) +
+  theme_void()
+```
+> Seems like war, peace, economy, power, military, government, the United States, Germany, and Britain are all connected to some degree. 
+
+```{r}
+library(ggplot2)
+
+tidy_fp %>%
+  filter(word %in% c("brazil", "argentina")) %>% 
+  count(year, word) %>% 
+  ggplot(aes(year, n, fill = word)) +
+    geom_col(position = "fill") +
+  theme(axis.text.x = element_text(angle=90,hjust=1))
+```
+
+```{r}
+library(ggplot2)
+
+tidy_fp %>%
+  filter(word %in% c("argentina", "germany")) %>% 
+  count(year, word) %>% 
+  ggplot(aes(year, n, fill = word)) +
+    geom_col(position = "fill") +
+  theme(axis.text.x = element_text(angle=90,hjust=1))
+```
+
+```{r}
+tidy_fp_countries <- tidy_fp %>% 
+  filter(word %in% c("brazil", "argentina", "germany", "britain", "japan", "mexico", "soviet", "russia", "america")) %>% 
+  count(word, sort = TRUE)
+ 
+
+tidy_fp_countries
+```
+> Nations aligned with the Axis Powers dominate the literature, and Latin America countires, although mentioned, pale in comparison to the Axis Powers in the Foreign Policy Bulletin. 
+
+> In this section I am exploring the FP dataset with topic modeling.
+
+```{r}
+tidy_fp_words <- tidy_fp %>% count(id, word)
+```
+
+```{r}
+fp.dtm <- tidy_fp_words %>% 
+  count(id, word) %>% 
+  cast_dtm(id, word, n)
+```
+
+
+```{r}
+#topic model with 16 topics. 
+fp.lda <- LDA(fp.dtm, k = 16, control = list(seed = 12345))
+fp.lda
+```
+
+```{r}
+fp.topics <- tidy(fp.lda, matrix = "beta")
+head(fp.topics)
+```
+```{r}
+fp.top.terms <- fp.topics %>%
+  arrange(desc(beta)) %>% 
+  group_by(topic) %>% slice(1:10)
+
+fp.top.terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+```{r}
+#topic model with only 5 topics. 
+fp2.lda <- LDA(fp.dtm, k = 5, control = list(seed = 12345))
+fp2.lda
+```
+
+```{r}
+fp2.topics <- tidy(fp2.lda, matrix = "beta")
+head(fp.topics)
+```
+
+```{r}
+fp2.top.terms <- fp2.topics %>%
+  arrange(desc(beta)) %>% 
+  group_by(topic) %>% slice(1:10)
+
+fp2.top.terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+> Topic modeling is highlighting similar results as the text analysis, which is that the Axis Powers and Soviet Union dominant the contents of the Foreign Policy Bulletin. 
+
+> Next on the agenda is to explore the FP dataset using word embeddings.
