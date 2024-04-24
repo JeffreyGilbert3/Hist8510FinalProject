@@ -4,6 +4,7 @@ format: html
 author: "Jeffrey Gilbert"
 editor: visual
 ---
+
 > In this section I am getting all the data loaded in and workable.
 
 ```{r}
@@ -69,8 +70,8 @@ fp.metadata <- separate(metadata,
           remove = FALSE)
 
 fpmeta <- as.data.frame(fp.metadata)
-file_paths <- system.file("ForeignPolicyBulletinData/fptxt/")
-fp_texts <- readtext(paste("ForeignPolicyBulletinData/fptxt/", "*.txt", sep=""))
+file_paths <- system.file("ForeignPolicyBulletinData/txt/")
+fp_texts <- readtext(paste("ForeignPolicyBulletinData/txt/", "*.txt", sep=""))
 fp_whole <- full_join(fpmeta, fp_texts, by = c("id" = "doc_id")) %>% as_tibble() 
 
 tidy_fp <- fp_whole %>%
@@ -83,13 +84,14 @@ tidy_fp <- fp_whole %>%
 tidy_fp <- tidy_fp %>% filter(!grepl('[0-9]', word))
 ```
 
-> In this section I am exploring the FP dataset with text analysis. 
+> In this section I am exploring the FP dataset with text analysis.
 
 ```{r}
 tidy_fp %>%
   count(word, sort = TRUE)
 ```
-> World War II and the nations assoicated with it are clearly dominant topics in this dataset. 
+
+> World War II and the nations assoicated with it are clearly dominant topics in this dataset.
 
 ```{r}
 fp.tf.idf <- tidy_fp %>%
@@ -106,8 +108,9 @@ fp_word_pairs <- fp_whole %>%
   anti_join(stop_words_custom)%>%
   pairwise_count(word, id, sort = TRUE, upper = FALSE)
 
-fp_word_pairs
+head(fp_word_pairs)
 ```
+
 > Need to figure out why 1921 and 1879 is being mentioned so much in this datset.
 
 ```{r}
@@ -124,7 +127,8 @@ fp_word_pairs %>%
                  point.padding = unit(0.2, "lines")) +
   theme_void()
 ```
-> Seems like war, peace, economy, power, military, government, the United States, Germany, and Britain are all connected to some degree. 
+
+> Seems like war, peace, economy, power, military, government, the United States, Germany, and Britain are all connected to some degree.
 
 ```{r}
 library(ggplot2)
@@ -156,7 +160,23 @@ tidy_fp_countries <- tidy_fp %>%
 
 tidy_fp_countries
 ```
-> Nations aligned with the Axis Powers dominate the literature, and Latin America countires, although mentioned, pale in comparison to the Axis Powers in the Foreign Policy Bulletin. 
+
+> Nations aligned with the Axis Powers dominate the literature, and Latin America countires, although mentioned, pale in comparison to the Axis Powers in the Foreign Policy Bulletin.
+
+> still working out filtering the years 1936:1941
+
+```{r}
+tidy_fp_countries.1936.1941 <- fp_whole %>% 
+  unnest_tokens(word, text) %>% 
+  filter(year = 1936:1941) %>%
+  filter(word %in% c("brazil", "argentina", "germany", "britain", "japan", "mexico", "soviet", "russia", "america")) %>% 
+  filter(str_detect(word, "[a-z']$")) %>% 
+  anti_join(stop_words_custom) %>%
+  count(word, sort = TRUE)
+
+
+tidy_fp_countries.1936.1941
+```
 
 > In this section I am exploring the FP dataset with topic modeling.
 
@@ -170,7 +190,6 @@ fp.dtm <- tidy_fp_words %>%
   cast_dtm(id, word, n)
 ```
 
-
 ```{r}
 #topic model with 16 topics. 
 fp.lda <- LDA(fp.dtm, k = 16, control = list(seed = 12345))
@@ -181,6 +200,7 @@ fp.lda
 fp.topics <- tidy(fp.lda, matrix = "beta")
 head(fp.topics)
 ```
+
 ```{r}
 fp.top.terms <- fp.topics %>%
   arrange(desc(beta)) %>% 
@@ -218,6 +238,102 @@ fp2.top.terms %>%
   scale_y_reordered()
 ```
 
-> Topic modeling is highlighting similar results as the text analysis, which is that the Axis Powers and Soviet Union dominant the contents of the Foreign Policy Bulletin. 
+> testing out different method for topic modeling:
 
-> Next on the agenda is to explore the FP dataset using word embeddings.
+```{r}
+fp3.lda <- LDA(fp.dtm, k = 16, control = list(seed = 12345), method = "Gibbs", alpha = 0.5)
+fp3.lda
+```
+
+```{r}
+fp3.topics <- tidy(fp3.lda, matrix = "beta")
+head(fp3.topics)
+```
+
+```{r}
+fp3.top.terms <- fp3.topics %>%
+  arrange(desc(beta)) %>% 
+  group_by(topic) %>% slice(1:10)
+
+fp3.top.terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+> Topic modeling is highlighting similar results as the text analysis, which is that the Axis Powers and Soviet Union dominant the contents of the Foreign Policy Bulletin.
+
+> Let's test the topic models from 1936 through 1941 (the years I am most interested in). Still trying to get this one to work. 
+
+```{r}
+tidy_fp_1936.1941 <- fp_whole %>%
+  unnest_tokens(word, text) %>%
+  filter(year == 1936:1941) %>%
+  filter(str_detect(word, "[a-z']$")) %>% 
+  anti_join(stop_words_custom)
+
+tidy_fp_1936.1941 <- tidy_fp_1936.1941 %>% filter(!grepl('[0-9]', word))
+```
+
+```{r}
+tidy_fp_words_1936.1941 <- tidy_fp_1936.1941 %>% 
+  count(id, word)
+```
+
+```{r}
+fp.dtm_1936.1941 <- tidy_fp_words_1936.1941 %>% 
+  count(id, word) %>% 
+  cast_dtm(id, word, n)
+```
+
+```{r}
+fp.lda_1936.1941 <- LDA(fp.dtm_1936.1941, k = 16, control = list(seed = 12345), method = "Gibbs", alpha = 0.5)
+
+fp.lda_1936.1941
+```
+
+```{r}
+fp.topics_1936.1941 <- tidy(fp.lda_1936.1941, matrix = "beta")
+head(fp.topics_1936.1941)
+```
+
+```{r}
+fp.top.terms_1936.1941 <- fp.topics_1936.1941 %>%
+  arrange(desc(beta)) %>% 
+  group_by(topic) %>% slice(1:10)
+
+fp.top.terms_1936.1941 %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+> Next on the agenda is to explore the FP dataset using word embeddings. Although I am running into a few setbacks. 
+
+```{r}
+setwd("ForeignPolicyBulletinData/")
+library(wordVectors)
+library(magrittr)
+library(dplyr)
+
+```
+
+```{r}
+model = train_word2vec(".txt",output="corpus_vectors.bin",threads = 3,vectors = 100,window=12)
+model = read.vectors("corpus_vectors.bin")
+```
+
+```{r}
+nearest_to(model,model[["argentina"]], 75)
+nearest_to(model,model[["brazil"]], 75)
+```
+Get only words associated with women
+```{r}
+lawords <- model[[c("brazil", "argentina", "latin")]]
+model %>% nearest_to(argentina, 100)
+```
+
+
