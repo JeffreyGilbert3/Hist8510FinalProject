@@ -166,16 +166,21 @@ tidy_fp_countries
 > still working out filtering the years 1936:1941
 
 ```{r}
-tidy_fp_countries.1936.1941 <- fp_whole %>% 
+fp_whole.1939.1941 <- fp_whole %>% 
+  filter(year == 1936:1941)
+
+tidy_fp.1936.1941 <- fp_whole.1939.1941 %>% 
   unnest_tokens(word, text) %>% 
-  filter(year = 1936:1941) %>%
-  filter(word %in% c("brazil", "argentina", "germany", "britain", "japan", "mexico", "soviet", "russia", "america")) %>% 
   filter(str_detect(word, "[a-z']$")) %>% 
-  anti_join(stop_words_custom) %>%
+  anti_join(stop_words_custom)
+
+tidy_fp.1936.1941 <- tidy_fp.1936.1941 %>% filter(!grepl('[0-9]', word))
+
+tidy_fp_countries.1936.1941 <- tidy_fp.1936.1941 %>% 
+   filter(word %in% c("brazil", "argentina", "germany", "britain", "japan", "mexico", "soviet", "russia", "america")) %>% 
   count(word, sort = TRUE)
-
-
-tidy_fp_countries.1936.1941
+ 
+tidy_fp_countries.1936.1941 
 ```
 
 > In this section I am exploring the FP dataset with topic modeling.
