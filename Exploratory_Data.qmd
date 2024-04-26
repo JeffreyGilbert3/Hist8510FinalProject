@@ -62,7 +62,7 @@ stop_words_custom <- stop_words %>%
 ```
 
 ```{r}
-metadata <- read.csv("https://raw.githubusercontent.com/regan008/ForeignPolicyBulletinData/main/metadata.csv")
+metadata <- read.csv("ForeignPolicyBulletinData/metadata.csv")
 
 fp.metadata <- separate(metadata,
          col = date,
@@ -70,9 +70,8 @@ fp.metadata <- separate(metadata,
           remove = FALSE)
 
 fpmeta <- as.data.frame(fp.metadata)
-file_paths <- system.file("ForeignPolicyBulletinData/txt/")
 fp_texts <- readtext(paste("ForeignPolicyBulletinData/txt/", "*.txt", sep=""))
-fp_whole <- full_join(fpmeta, fp_texts, by = c("id" = "doc_id")) %>% as_tibble() 
+fp_whole <- full_join(fpmeta, fp_texts, by = c("filename" = "doc_id")) %>% as_tibble() 
 
 tidy_fp <- fp_whole %>%
   unnest_tokens(word, text) %>% 
@@ -95,8 +94,8 @@ tidy_fp %>%
 
 ```{r}
 fp.tf.idf <- tidy_fp %>%
-  count(id, word, sort = TRUE)  %>%  
-  bind_tf_idf(word, id, n) 
+  count(filename, word, sort = TRUE)  %>%  
+  bind_tf_idf(word, filename, n) 
   
   fp.tf.idf %>% arrange(desc(tf_idf))
 ```
@@ -106,12 +105,12 @@ fp_word_pairs <- fp_whole %>%
   mutate(speech_end = word(text, -5000, end = -1)) %>% 
   unnest_tokens(word, speech_end) %>%  
   anti_join(stop_words_custom)%>%
-  pairwise_count(word, id, sort = TRUE, upper = FALSE)
+  pairwise_count(word, filename, sort = TRUE, upper = FALSE)
 
 head(fp_word_pairs)
 ```
 
-> Need to figure out why 1921 and 1879 is being mentioned so much in this datset.
+> Need to figure out why 1921 and 1879 is being mentioned so much in this dataset.
 
 ```{r}
 library(igraph)
@@ -166,9 +165,8 @@ tidy_fp_countries
 > still working out filtering the years 1936:1941
 
 ```{r}
-<<<<<<< HEAD
 fp_whole.1939.1941 <- fp_whole %>% 
-  filter(year == 1936:1941) #seems to be removing the text
+  filter(year == 1936:1941)
 
 tidy_fp.1936.1941 <- fp_whole.1939.1941 %>% 
   unnest_tokens(word, text) %>% 
@@ -182,30 +180,18 @@ tidy_fp_countries.1936.1941 <- tidy_fp.1936.1941 %>%
   count(word, sort = TRUE)
  
 tidy_fp_countries.1936.1941 
-=======
-tidy_fp_countries.1936.1941 <- fp_whole %>% 
-  unnest_tokens(word, text) %>% 
-  filter(year = 1936:1941) %>%
-  filter(word %in% c("brazil", "argentina", "germany", "britain", "japan", "mexico", "soviet", "russia", "america")) %>% 
-  filter(str_detect(word, "[a-z']$")) %>% 
-  anti_join(stop_words_custom) %>%
-  count(word, sort = TRUE)
-
-
-tidy_fp_countries.1936.1941
->>>>>>> e1e9fef (added different topic modeling method, in the process of filtering 1936-1941 and word embeddings)
 ```
 
 > In this section I am exploring the FP dataset with topic modeling.
 
 ```{r}
-tidy_fp_words <- tidy_fp %>% count(id, word)
+tidy_fp_words <- tidy_fp %>% count(filename, word)
 ```
 
 ```{r}
 fp.dtm <- tidy_fp_words %>% 
-  count(id, word) %>% 
-  cast_dtm(id, word, n)
+  count(filename, word) %>% 
+  cast_dtm(filename, word, n)
 ```
 
 ```{r}
@@ -282,46 +268,36 @@ fp3.top.terms %>%
 ```
 > Topic modeling is highlighting similar results as the text analysis, which is that the Axis Powers and Soviet Union dominant the contents of the Foreign Policy Bulletin.
 
-> Let's test the topic models from 1936 through 1941 (the years I am most interested in). Still trying to get this one to work. 
+> Let's test the topic models from 1936 through 1941 (the years I am most interested in).
 
 ```{r}
-tidy_fp_1936.1941 <- fp_whole %>%
-  unnest_tokens(word, text) %>%
-  filter(year == 1936:1941) %>%
-  filter(str_detect(word, "[a-z']$")) %>% 
-  anti_join(stop_words_custom)
-
-tidy_fp_1936.1941 <- tidy_fp_1936.1941 %>% filter(!grepl('[0-9]', word))
+tidy_fp2_words_1936.1941 <- tidy_fp_1936.1941 %>% 
+  count(filename, word)
 ```
 
 ```{r}
-tidy_fp_words_1936.1941 <- tidy_fp_1936.1941 %>% 
-  count(id, word)
+fp.dtm2_1936.1941 <- tidy_fp2_words_1936.1941 %>% 
+  count(filename, word) %>% 
+  cast_dtm(filename, word, n)
 ```
 
 ```{r}
-fp.dtm_1936.1941 <- tidy_fp_words_1936.1941 %>% 
-  count(id, word) %>% 
-  cast_dtm(id, word, n)
+fp.lda2_1936.1941 <- LDA(fp.dtm2_1936.1941, k = 16, control = list(seed = 12345), method = "Gibbs", alpha = 0.5)
+
+fp.lda2_1936.1941
 ```
 
 ```{r}
-fp.lda_1936.1941 <- LDA(fp.dtm_1936.1941, k = 16, control = list(seed = 12345), method = "Gibbs", alpha = 0.5)
-
-fp.lda_1936.1941
+fp.topics2_1936.1941 <- tidy(fp.lda2_1936.1941, matrix = "beta")
+head(fp.topics2_1936.1941)
 ```
 
 ```{r}
-fp.topics_1936.1941 <- tidy(fp.lda_1936.1941, matrix = "beta")
-head(fp.topics_1936.1941)
-```
-
-```{r}
-fp.top.terms_1936.1941 <- fp.topics_1936.1941 %>%
+fp.top.terms2_1936.1941 <- fp.topics2_1936.1941 %>%
   arrange(desc(beta)) %>% 
   group_by(topic) %>% slice(1:10)
 
-fp.top.terms_1936.1941 %>%
+fp.top.terms2_1936.1941 %>%
   mutate(term = reorder_within(term, beta, topic)) %>%
   ggplot(aes(beta, term, fill = factor(topic))) +
   geom_col(show.legend = FALSE) +
@@ -335,10 +311,7 @@ fp.top.terms_1936.1941 %>%
 setwd("ForeignPolicyBulletinData/")
 library(wordVectors)
 library(magrittr)
-<<<<<<< HEAD
-=======
 library(dplyr)
->>>>>>> e1e9fef (added different topic modeling method, in the process of filtering 1936-1941 and word embeddings)
 
 ```
 
