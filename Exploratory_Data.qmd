@@ -166,6 +166,7 @@ tidy_fp_countries
 > still working out filtering the years 1936:1941
 
 ```{r}
+<<<<<<< HEAD
 fp_whole.1939.1941 <- fp_whole %>% 
   filter(year == 1936:1941) #seems to be removing the text
 
@@ -181,6 +182,18 @@ tidy_fp_countries.1936.1941 <- tidy_fp.1936.1941 %>%
   count(word, sort = TRUE)
  
 tidy_fp_countries.1936.1941 
+=======
+tidy_fp_countries.1936.1941 <- fp_whole %>% 
+  unnest_tokens(word, text) %>% 
+  filter(year = 1936:1941) %>%
+  filter(word %in% c("brazil", "argentina", "germany", "britain", "japan", "mexico", "soviet", "russia", "america")) %>% 
+  filter(str_detect(word, "[a-z']$")) %>% 
+  anti_join(stop_words_custom) %>%
+  count(word, sort = TRUE)
+
+
+tidy_fp_countries.1936.1941
+>>>>>>> e1e9fef (added different topic modeling method, in the process of filtering 1936-1941 and word embeddings)
 ```
 
 > In this section I am exploring the FP dataset with topic modeling.
@@ -322,6 +335,10 @@ fp.top.terms_1936.1941 %>%
 setwd("ForeignPolicyBulletinData/")
 library(wordVectors)
 library(magrittr)
+<<<<<<< HEAD
+=======
+library(dplyr)
+>>>>>>> e1e9fef (added different topic modeling method, in the process of filtering 1936-1941 and word embeddings)
 
 ```
 
