@@ -316,7 +316,7 @@ library(dplyr)
 ```
 
 ```{r}
-model = train_word2vec(".txt",output="corpus_vectors.bin",threads = 3,vectors = 100,window=12)
+model = train_word2vec("ForeignPolicyBulletinData/txt/", output="corpus_vectors.bin",threads = 3,vectors = 100,window=12)
 model = read.vectors("corpus_vectors.bin")
 ```
 
@@ -326,7 +326,7 @@ nearest_to(model,model[["brazil"]], 75)
 ```
 Get only words associated with women
 ```{r}
-lawords <- model[[c("brazil", "argentina", "latin")]]
+lawords <- model[[c("brazil", "argentina")]]
 model %>% nearest_to(argentina, 100)
 ```
 
