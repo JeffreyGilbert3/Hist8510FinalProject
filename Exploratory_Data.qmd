@@ -330,10 +330,27 @@ nearest_to(model,model[["argentina"]], 75)
 ```{r}
 nearest_to(model,model[["germany"]], 75)
 ```
+```{r}
+nearest_to(model,model[["brazil"]], 75)
+```
+
+```{r}
+nearest_to(model,model[["solidarity"]], 75)
+```
+
+```{r}
+nearest_to(model,model[["aggressors"]], 75)
+```
+
+```{r}
+nearest_to(model,model[["neutrality"]], 75)
+```
+
+```{r}
+nearest_to(model,model[["roosevelt"]], 75)
+```
 
 ```{r}
 lawords <- model[[c("brazil", "argentina")]]
 model %>% nearest_to(lawords, 100)
 ```
-
-
