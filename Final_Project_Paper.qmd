@@ -18,6 +18,7 @@ library(DigitalMethodsData)
 library(wordVectors)
 library(magrittr)
 library(dplyr)
+library(ggplot2)
 ```
 
 ```{r}
@@ -105,7 +106,6 @@ fp3.lda <- LDA(fp.dtm, k = 16, control = list(seed = 12345), method = "Gibbs", a
 fp3.lda
 
 fp3.topics <- tidy(fp3.lda, matrix = "beta")
-head(fp3.topics)
 
 fp3.top.terms <- fp3.topics %>%
   arrange(desc(beta)) %>% 
@@ -129,9 +129,9 @@ if (!require(wordVectors)) {
   devtools::install_github("bmschmidt/wordVectors")
 }
 
-if (!file.exists(".txt")) prep_word2vec(origin="ForeignPolicyBulletinData", destination=".txt", lowercase=T, bundle_ngrams=1)
+if (!file.exists("txt")) prep_word2vec(origin="ForeignPolicyBulletinData", destination="txt", lowercase=T, bundle_ngrams=1)
 
-if (!file.exists("corpus_vectors.bin")) {model = train_word2vec(".txt","corpus_vectors.bin",vectors=200, threads=5, window=12, iter=5, negative_samples=0)} else model = read.vectors("corpus_vectors.bin")
+if (!file.exists("corpus_vectors.bin")) {model = train_word2vec("txt","corpus_vectors.bin",vectors=200, threads=5, window=12, iter=5, negative_samples=0)} else model = read.vectors("corpus_vectors.bin")
 ```
 
 ```{r}
