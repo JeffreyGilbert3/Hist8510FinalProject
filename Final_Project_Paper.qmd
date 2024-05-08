@@ -125,6 +125,7 @@ fp3.top.terms <- fp3.topics %>%
 ```
 
 ```{r}
+
 #Topic Model
 fp3.top.terms %>%
   mutate(term = reorder_within(term, beta, topic)) %>%
