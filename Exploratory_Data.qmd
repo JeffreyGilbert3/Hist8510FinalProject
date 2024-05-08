@@ -153,7 +153,7 @@ tidy_fp %>%
 
 ```{r}
 tidy_fp_countries <- tidy_fp %>% 
-  filter(word %in% c("brazil", "argentina", "germany", "britain", "japan", "mexico", "soviet", "russia", "america")) %>% 
+  filter(word %in% c("brazil", "argentina", "germany", "britain", "japan", "mexico", "soviet", "russia", "america", "chile", "venezuela")) %>% 
   count(word, sort = TRUE)
  
 

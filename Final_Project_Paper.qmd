@@ -1,5 +1,5 @@
 ---
-title: "Final_Project_Paper"
+title: "Inter-American Cooperation and Hemispheric Solidarity during the Interwar Period and World War II"
 Author: "Jeffrey Gilbert"
 format: html
 ---
@@ -8,7 +8,9 @@ The expansion of imperial powers in the Western Hemisphere has been a foreign po
 
 Over the last century, the Foreign Policy Association (FPA) has been producing content on U.S. foreign policy. Originally established as the League of Free Nations Association, the association’s initial aspirations were to support peace initiatives promulgated by Woodrow Wilson. However, the League of Free Nations Association was short-lived, and the association would shortly be changed to the FPA in 1923, where all matters of U.S. foreign policy fell under their purview of study. Moreover, the FPA had high-ranking U.S. political figures among its incorporators, including Eleanor Roosevelt and John Foster Dulles. In addition to these important incorporators, FPA members also had addresses delivered before them by Franklin D. Roosevelt.^[fn3: Foreign Policy Association, “About FPA,” accessed April 28, 2024, https://www.fpa.org/about/] In 1931, the FPA began producing the Foreign Policy Bulletin, which published articles on international events affecting U.S. foreign policy. The Foreign Policy Bulletin Dataset is comprised of the volumes produced by the Foreign Policy Bulletin between 1936 and 1946.^[fn4: John Mark Ockerbloom, “The Online Books Page: Foreign Policy Bulletin,” accessed April 28, 2024, https://onlinebooks.library.upenn.edu/webbin/serial?id=fpabulletin]
 
-```{r}
+```{r, message=FALSE, warning=FALSE, results='hide'} 
+#| echo: false
+
 #Load in Libraries
 library(tidytext)
 library(tidyverse)
@@ -24,7 +26,10 @@ library(dplyr)
 library(ggplot2)
 ```
 
-```{r}
+```{r, message=FALSE, warning=FALSE, results='hide'}
+#| echo: false
+#| results: hide
+
 #load in dataset
 metadata <- read.csv("ForeignPolicyBulletinData/metadata.csv")
 
@@ -89,7 +94,7 @@ tidy_fp <- tidy_fp %>% filter(!grepl('[0-9]', word))
 The Foreign Policy Bulletin Dataset provides insights on historical foreign policy events considered significant and relevant by individuals engaging with the U.S. foreign relations community. Digital methods, particularly text analysis, reveals paradigms related to the relevance of the Latin American nations regarding U.S. foreign policy efforts during the interwar period and World War II. From counting words to using topic modeling and word vectors, text analysis has illuminated important insights on the significance of Latin America to the United States, as well as the themes and words associated most with Latin American nations. When examining the direct word references, it becomes apparent that Latin American nations were discussed far less than European nations and the Axis Powers.
 
 ```{r}
-#country word count
+#Country Word Count
 tidy_fp_countries <- tidy_fp %>% 
   filter(word %in% c("brazil", "argentina", "germany", "britain", "japan", "mexico", "soviet", "russia", "america", "chile", "venezuela")) %>% 
   count(word, sort = TRUE)
@@ -99,7 +104,9 @@ tidy_fp_countries
 ```
 In the Foreign Policy Bulletin Dataset, European nations and the Axis Powers are disproportionately focused on. In raw numbers, from 1936-1946, Britain, Germany, Russia, and Japan were directly mentioned 12,027 times. Meanwhile, Argentina, Brazil, Chile, Mexico, and Venezuela were only directly referenced 1,357 times. Yet, the bulletin’s lackluster coverage of Latin America in juxtaposition to its European counterparts should not diminish Latin America’s significance to U.S. foreign policy. The major theme associated with Latin American nations in the bulletin indicates the critical role that Latin America played in protecting U.S. interests. 
 
-```{r}
+```{r, message=FALSE, warning=FALSE, results='hide'}
+#| echo: false
+
 #topic model
 tidy_fp_words <- tidy_fp %>% count(filename, word)
 
@@ -115,7 +122,10 @@ fp3.topics <- tidy(fp3.lda, matrix = "beta")
 fp3.top.terms <- fp3.topics %>%
   arrange(desc(beta)) %>% 
   group_by(topic) %>% slice(1:10)
+```
 
+```{r}
+#Topic Model
 fp3.top.terms %>%
   mutate(term = reorder_within(term, beta, topic)) %>%
   ggplot(aes(beta, term, fill = factor(topic))) +
@@ -125,7 +135,9 @@ fp3.top.terms %>%
 ```
 With regard to the topic model output that focuses on Latin American nations, the topic model found that Argentina, Brazil, Mexico, Chile, and solidarity were co-occurring. The topic model was picked up on a major foreign policy theme that was present throughout the interwar period and World War II, which is inter-American cooperation. Since neutrality sentiment was prevalent in the United States, Roosevelt was largely unable to act outside of the Americas until the attack on Pearl Harbor. Roosevelt, instead, chose to promote inter-American solidarity to prevent the Axis Powers from penetrating into the Western Hemisphere. This inter-American cooperation manifested through Roosevelt’s Good Neighbor diplomacy, but it still had its limitations. Inter-American cooperation did not mean that Latin American nations were required to make a direct alliance with the United States; rather, it was intended to create a common bond and galvanize support for keeping out the Axis Powers from the Western Hemisphere.^[fn5: Gellman, Good Neighbor Diplomacy, 12] Indeed, word vectors further suggest this connection between solidarity and the Western Hemisphere.
 
-```{r}
+```{r, message=FALSE, warning=FALSE, results='hide'}
+#| echo: false
+
 #word vectors
 if (!require(wordVectors)) {
   if (!(require(devtools))) {
@@ -140,14 +152,17 @@ if (!file.exists("corpus_vectors.bin")) {model = train_word2vec("txt","corpus_ve
 ```
 
 ```{r}
+#Word Vector for Argentina
 nearest_to(model,model[["argentina"]], 75)
 ```
 
 ```{r}
+#Word Vector for solidarity
 nearest_to(model,model[["solidarity"]], 75)
 ```
 
 ```{r}
+#Word Vector for Germany
 nearest_to(model,model[["germany"]], 75)
 ```
 The need for solidarity was tied to the fear of German expansion into Latin America. When examining the outputs of the word vector, the word vectors indicated that Argentina was co-occurring with solidarity, temporalizing, and spy. Moreover, solidarity co-occurred with hemisphere, cooperation, defense, affirming, upholding, neighborliness, neighbor, and lima. Meanwhile, Germany was co-occurring with invincible, intimidate, frighten, and injustices. In many ways, inter-American solidarity was seen as an essential barrier for keeping Germany out of Latin America and, therefore, protecting a variety of U.S. interests, ranging from national to economic security.^[fn6: Ibid., 11-12, 79-81] Under this pretext, temporalizing becomes a relevant co-occurrence as it indicates that Argentina was not directly committing itself to U.S. interests. 
