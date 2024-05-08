@@ -139,7 +139,7 @@ With regard to the topic model output that focuses on Latin American nations, th
 ```{r, message=FALSE, warning=FALSE, results='hide'}
 #| echo: false
 
-#word vectors
+#Word Vectors
 if (!require(wordVectors)) {
   if (!(require(devtools))) {
     install.packages("devtools")
